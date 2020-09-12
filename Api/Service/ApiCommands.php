@@ -119,7 +119,7 @@ class ApiCommands
             $progress = ProgressBarHelper::init($output, $batchSize);
             $progress->start();
             try {
-                $counter = 0;
+
                 foreach ($items as $key => $item) {
                     $i += $this->recommenderApi->getClient()->send(
                         'ImportItems',
@@ -137,8 +137,12 @@ class ApiCommands
                         break;
                     }
                 }
+
+                if ($i < $batchSize) {
+                    $batchSize = 0;
+                }
+
             } catch (\Exception $error) {
-                $batchSize = 0;
                 $progress->finish();
                 $output->writeln('');
                 $output->writeln($error->getMessage());
