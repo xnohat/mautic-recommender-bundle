@@ -109,14 +109,56 @@ class Processor
             );
         }
 
+        //check contact by Email
         if (isset($eventDetail['contactEmail'])) {
-            $contact = $this->leadModel->getRepository()->getContactsByEmail($eventDetail['contactEmail']);
-            $contact = current($contact);
+            $contact = $this->leadModel->checkForDuplicateContact(['email'=>$eventDetail['contactEmail']]);
             if (!$contact instanceof Lead) {
                 throw new \Exception('Contact '.$eventDetail['contactEmail'].' not found');
             }
             unset($eventDetail['contactEmail']);
             $this->leadModel->setSystemCurrentLead($contact);
+
+        } elseif(isset($eventDetail['email'])){
+            $contact = $this->leadModel->checkForDuplicateContact(['email'=>$eventDetail['email']]);
+            if (!$contact instanceof Lead) {
+                throw new \Exception('Contact '.$eventDetail['email'].' not found');
+            }
+            unset($eventDetail['email']);
+            $this->leadModel->setSystemCurrentLead($contact);
+        
+        //check contact by Phone
+        } elseif(isset($eventDetail['contactPhone'])){
+            $contact = $this->leadModel->checkForDuplicateContact(['phone'=>$eventDetail['contactPhone']]);
+            if (!$contact instanceof Lead) {
+                throw new \Exception('Contact '.$eventDetail['contactPhone'].' not found');
+            }
+            unset($eventDetail['contactPhone']);
+            $this->leadModel->setSystemCurrentLead($contact);
+
+        } elseif(isset($eventDetail['phone'])){
+            $contact = $this->leadModel->checkForDuplicateContact(['phone'=>$eventDetail['phone']]);
+            if (!$contact instanceof Lead) {
+                throw new \Exception('Contact '.$eventDetail['phone'].' not found');
+            }
+            unset($eventDetail['phone']);
+            $this->leadModel->setSystemCurrentLead($contact);
+        
+        //check contact by id_card
+        } elseif(isset($eventDetail['id_card'])){
+        $contact = $this->leadModel->checkForDuplicateContact(['id_card'=>$eventDetail['id_card']]);
+        if (!$contact instanceof Lead) {
+            throw new \Exception('Contact with ID_Card '.$eventDetail['id_card'].' not found');
+        }
+        unset($eventDetail['id_card']);
+        $this->leadModel->setSystemCurrentLead($contact);
+
+        //check contact by contactId
+        } elseif (isset($eventDetail['contactId'])) {
+            $this->leadModel->setSystemCurrentLead($this->leadModel->getEntity($eventDetail['contactId']));
+        
+        //Finally, only throw error exception if this current event is from Console or API. Skip throw error for Pixel because pixel can track anonymous contact by mautic fingerprint
+        } elseif(defined('IN_MAUTIC_CONSOLE') || defined('IN_MAUTIC_API')) {
+            throw new \Exception('One of parameters contactId/contactEmail/email/contactPhone/phone/id_card is required');
         }
 
         $this->apiCommands->callCommand($eventLabel, $eventDetail);
