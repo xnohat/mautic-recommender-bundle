@@ -178,6 +178,19 @@ return [
                 ]
             ],
 
+            'mautic.recommender.events.queryprocessor'  => [
+                'class'     => \MauticPlugin\MauticRecommenderBundle\Events\QueryProcessor::class,
+                'arguments' => [
+                    'mautic.helper.core_parameters',
+                    'mautic.security',
+                    'mautic.recommender.service.api.commands',
+                    'mautic.recommender.model.event',
+                    'translator',
+                    'mautic.lead.model.lead',
+                    'doctrine.orm.entity_manager'
+                ]
+            ],
+
             /* Filters */
             'mautic.recommender.filter.factory'  => [
                 'class'     => \MauticPlugin\MauticRecommenderBundle\Filter\Segment\FilterFactory::class,
@@ -461,6 +474,11 @@ return [
                 'path'       => '/recommender/{component}',
                 'controller' => 'MauticRecommenderBundle:Api\RecommenderApi:process',
                 'method'     => 'POST',
+            ],
+            [
+                'path'       => '/recommender/{component}',
+                'controller' => 'MauticRecommenderBundle:Api\RecommenderApi:get',
+                'method'     => 'GET',
             ],
         ],
     ],

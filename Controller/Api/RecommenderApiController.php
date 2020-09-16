@@ -15,6 +15,7 @@ use FOS\RestBundle\Util\Codes;
 use Mautic\ApiBundle\Controller\CommonApiController;
 use MauticPlugin\MauticRecommenderBundle\Api\Service\ApiCommands;
 use MauticPlugin\MauticRecommenderBundle\Events\Processor;
+use MauticPlugin\MauticRecommenderBundle\Events\QueryProcessor;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\FilterControllerEvent;
 
@@ -28,6 +29,10 @@ class RecommenderApiController extends CommonApiController
      */
     private $processor;
     /**
+     * @var QueryProcessor
+     */
+    private $queryprocessor;
+    /**
      * @var array
      */
     private $allowedEvents = ['RecommenderEvent'];
@@ -38,6 +43,7 @@ class RecommenderApiController extends CommonApiController
     public function initialize(FilterControllerEvent $event)
     {
         $this->processor = $this->get('mautic.recommender.events.processor');
+        $this->queryprocessor = $this->get('mautic.recommender.events.queryprocessor');
     }
 
 
@@ -68,4 +74,34 @@ class RecommenderApiController extends CommonApiController
             return $this->badRequest($exception->getMessage());
         }
     }
+
+    /**
+     * @param $component
+     *
+     * @return array|Response
+     */
+    public function getAction($component)
+    {
+        defined('IN_MAUTIC_API') or define('IN_MAUTIC_API', 1);
+        if (!in_array($component, $this->allowedEvents)) {
+            return $this->badRequest(
+                sprintf("%s is not allowed. You can use just %s", $component, implode(', ', $this->allowedEvents))
+            );
+        } elseif (empty($this->request->query->all())) {
+            $view = $this->view(['error' => 'Parameters cannot be empty.'], Codes::HTTP_OK);
+
+            return $this->handleView($view);
+        }
+        $arrQuery = $this->request->query->all();
+        try {
+            $queryresult = $this->queryprocessor->query($arrQuery);
+            /** @var ApiCommands $apiCommands */
+            //$view  = $this->view(['success'=>'1'], Codes::HTTP_OK);
+            $view  = $this->view($queryresult, Codes::HTTP_OK);
+            return $this->handleView($view);
+        } catch (\Exception $exception) {
+            return $this->badRequest($exception->getMessage());
+        }
+    }
+
 }

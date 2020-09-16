@@ -85,4 +85,40 @@ class EventLogRepository extends CommonRepository
 
         return $this->getTimelineResults($qb, $options, 're.name', $alias.'.date_added', [], ['date_added']);
     }
+
+    /**
+     * @param Lead         $contact
+     * @param int          $limit_last_days     
+     *
+     * @return array
+     */
+    public function getEvents(Lead $contact, $limit_last_days = 7)
+    {
+        $alias = $this->getTableAlias();
+        $qb    = $this->getEntityManager()->getConnection()->createQueryBuilder()
+            ->select($alias.'.*', 're.name as event_name', 'relpv.id as event_property_value_id', 'rp_for_relpv.name as event_property_name', 'relpv.value as event_property_value', 'ripv.value as item_property_value', 'rp.name as item_property_name', "'".$contact->getName()."' as lead_name", "'".$contact->getEmail()."' as lead_email", "'".$contact->getLeadPhoneNumber()."' as lead_phone")
+            ->from(MAUTIC_TABLE_PREFIX.'recommender_event_log', $alias);
+            
+        $qb->leftJoin($alias, 'recommender_event', 're', 're.id = '.$alias.'.event_id' );
+        $qb->leftJoin($alias, 'recommender_item', 'ri', 'ri.id = '.$alias.'.item_id' );
+        $qb->leftJoin('ri', 'recommender_item_property_value', 'ripv', 'ri.id = ripv.item_id');
+        $qb->leftJoin('ripv', 'recommender_property', 'rp', 'rp.id = ripv.property_id');
+        $qb->leftJoin($alias, 'recommender_event_log_property_value', 'relpv', 'relpv.event_log_id = '.$alias.'.id' );
+        $qb->leftJoin('relpv', 'recommender_property', 'rp_for_relpv', 'rp_for_relpv.id = relpv.property_id');
+
+        //Security by prepared SQL
+        $qb->andWhere($alias.'.lead_id = :lead')
+            ->setParameter('lead', $contact->getId());
+
+        //limit results to last x days
+        $qb->andWhere ($alias.'.date_added > DATE_SUB(CURDATE(), INTERVAL :limit_last_days DAY)')
+            ->setParameter('limit_last_days', $limit_last_days);
+
+        //$qb->groupBy($alias.'.id');
+        $qb->orderBy($alias.'.id',' desc');
+
+        return $qb->execute()->fetchAll();
+
+    }
+
 }
