@@ -16,6 +16,7 @@ use Mautic\CoreBundle\Factory\ModelFactory;
 use Mautic\CoreBundle\Translation\Translator;
 use Mautic\LeadBundle\Event\LeadTimelineEvent;
 use Mautic\LeadBundle\LeadEvents;
+use Mautic\LeadBundle\Event\LeadMergeEvent;
 
 use Mautic\PluginBundle\Helper\IntegrationHelper;
 
